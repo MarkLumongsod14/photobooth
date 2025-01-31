@@ -1,254 +1,469 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Squid Game Photobooth</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');  
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squid Game Photobooth</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');  
 
-    body {
-      text-align: center;
-      font-family: 'Orbitron', sans-serif;
-      color: white;
-      background-color: black;
-      margin: 0;
-      padding: 0;
-      position: relative;
-    }
-
-    .logo-container img {
-      width: 550px; 
-      background-color: black;
-    }
-
-    .content-container {
-      margin-top: 50px;
-    }
-
-    video, img, canvas {
-      border: 4px solid #ff0055;
-      border-radius: 10px;
-      margin-top: 10px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      background-color: whitesmoke;
-    }
-
-    #capturedImageContainer {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 20px;
-    }
-
-    #capturedImage {
-      display: none;
-    }
-
-    .buttons {
-      margin-top: 15px;
-    }
-
-    button {
-      padding: 12px 20px;
-      margin: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      border: none;
-      border-radius: 10px;
-      color: white;
-      background: #ff0055;
-      transition: 0.3s ease-in-out;
-      font-family: 'Orbitron', sans-serif;
-    }
-
-    button:hover {
-      background: #ff3377;
-      transform: scale(1.1);
-    }
-
-    #webcamoff {
-      font-size: 18px;
-      font-weight: bold;
-      color: #ffcc00;
-      margin-top: 10px;
-    }
-
-    #retakeBtn, #clearBtn, #clearCollageBtn {
-      display: none;
-    }
-
-    .filter-container {
-      margin-top: 20px;
-    }
-
-    select {
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: none;
-      color: white;
-      background: #333;
-    }
-
-    #collageContainer {
-      display: grid;
-      gap: 15px;
-      margin-top: 30px;
-      width: 640px; 
-      margin-left: auto;
-      margin-right: auto;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-    }
-
-    .collage-image {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      border-radius: 0; 
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
-      transition: transform 0.3s ease-in-out; 
-    }
-
-    .collage-image:hover {
-      transform: scale(1.05); 
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5); 
-    }
-
-    #clearCollageBtn {
-      display: inline-block; 
-    }
-
-    .qr-container {
-      margin-top: 20px;
-    }
-
-    #qrCodeContainer {
-      margin-top: 20px;
-    }
-
-    #downloadInstructions {
-      color: #ffcc00;
-      display: none;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="logo-container">
-    <img src="logo.png" alt="Squid Game Logo">
-  </div>
-
-  <div class="content-container">
-    <video id="webcam" width="640" height="480" autoplay></video><br/>
-
-    <div class="filter-container">
-      <select id="filterSelect">
-        <option value="none">🔄 No Filter</option>
-        <option value="grayscale(100%)">⚫ Grayscale</option>
-        <option value="sepia(100%)">🟤 Sepia</option>
-        <option value="invert(100%)">🔃 Invert</option>
-        <option value="blur(5px)">🌫️ Blur</option>
-        <option value="brightness(1.5)">☀️ Brightness Boost</option>
-        <option value="contrast(200%)">🔳 High Contrast</option>
-        <option value="hue-rotate(90deg)">🌈 Hue Rotate</option>
-        <option value="saturate(300%)">🎨 Saturation Boost</option>
-        <option value="opacity(50%)">👻 Ghost Effect</option>
-        <option value="drop-shadow(10px 10px 5px #ff0000)">🔥 Shadow Glow</option>
-      </select>
-      <button onclick="applySelectedFilter()">✔️ Apply Filter</button>
-    </div>
-
-    <div class="buttons">
-      <button onclick="on_cam()">🎥 Turn it ON</button>
-      <button onclick="capture_image()">📸 Capture Image</button>
-      <button onclick="off_cam()">❌ Turn it OFF</button>
-    </div>
-
-    <h1 id='webcamoff'></h1>
-    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
-
-    <div id="capturedImageContainer">
-      <img id="capturedImage" width="640" height="480" />
-    </div>
-
-    <div class="buttons">
-      <button id="retakeBtn" onclick="retake_photo()">🔄 Take Photo Again</button>
-      <button id="clearBtn" onclick="clear_photo()">🗑️ Clear Photo</button>
-    </div>
-
-    <div class="qr-container">
-      <div id="qrCodeContainer"></div>
-      <p id="downloadInstructions">📱 Scan this QR code to download your image!</p>
-    </div>
-  </div>
-
-  <!-- QR Code Generator -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <script>
-    let stream = null;  
-    let currentFilter = 'none';
-
-    function on_cam() {
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(function(camStream) {
-          stream = camStream;
-          document.getElementById('webcam').srcObject = stream;
-          document.getElementById('webcamoff').innerText = "";
-        })
-        .catch(() => {
-          document.getElementById('webcamoff').innerText = "Camera access denied!";
-        });
-    }
-
-    function off_cam() {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        document.getElementById('webcam').srcObject = null;
-        document.getElementById('webcamoff').innerText = "Your cam is turned off!";
+      body {
+        text-align: center;
+        font-family: 'Orbitron', sans-serif;
+        color: white;
+        background-color: black;
+        background-image: url('bg1.jpg'); /* Set your image URL here */
+        background-repeat: no-repeat;
+        background-size: cover;
+        margin: 0;
+        padding: 0;
+        position: relative;
       }
-    }
 
-    function capture_image() {
-      let canvas = document.getElementById('canvas');
-      let context = canvas.getContext('2d');
-      let webcam = document.getElementById('webcam');
+      .logo-container img {
+        width: 250px; 
+        background-color: black;
+      }
 
-      context.filter = currentFilter;
-      context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-      let dataUrl = canvas.toDataURL('image/png');
+      .content-container {
+        margin-top: 20px;
+      }
 
-      let capturedImage = document.getElementById('capturedImage');
-      capturedImage.src = dataUrl;
-      capturedImage.style.display = "block";
+      video, img, canvas {
+        border: 4px solid #ff0055;
+        border-radius: 10px;
+        margin-top: 10px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        background-color: whitesmoke;
+      }
 
-      generateQRCode(dataUrl);
+      #capturedImageContainer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+      }
 
-      document.getElementById('retakeBtn').style.display = "inline-block";
-      document.getElementById('clearBtn').style.display = "inline-block";
-    }
+      #capturedImage {
+        display: none;
+      }
 
-    function retake_photo() {
-      document.getElementById('capturedImage').style.display = "none";
-      document.getElementById('qrCodeContainer').innerHTML = ""; 
-      document.getElementById('downloadInstructions').style.display = "none";
-    }
+      .buttons {
+        margin-top: 15px;
+      }
 
-    function clear_photo() {
-      document.getElementById('capturedImage').src = "";
-      document.getElementById('capturedImage').style.display = "none";
-      document.getElementById('qrCodeContainer').innerHTML = ""; 
-      document.getElementById('downloadInstructions').style.display = "none";
-    }
+      button {
+        padding: 12px 10px;
+        margin: 1px;
+        margin-top: 0px;
+        cursor: pointer;
+        font-size: 16px;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        background: #ff0055;
+        transition: 0.3s ease-in-out;
+        font-family: 'Orbitron', sans-serif;
+      }
 
-    function generateQRCode(imageData) {
-      document.getElementById('qrCodeContainer').innerHTML = '';
-      new QRCode(document.getElementById('qrCodeContainer'), imageData);
-      document.getElementById('downloadInstructions').style.display = "block";
-    }
-  </script>
-</body>
-</html>
+      button:hover {
+        background: #ff3377;
+        transform: scale(1.1);
+      }
+
+      #webcamoff {
+        font-size: 18px;
+        font-weight: bold;
+        color: #ffcc00;
+        margin-top: 10px;
+      }
+
+      #retakeBtn, #clearBtn, #clearCollageBtn {
+        display: none;
+      }
+
+      .filter-buttons button {
+        background: #333;
+        color: white;
+      }
+
+      .filter-buttons button:hover {
+        background: #555;
+      }
+
+      .filter-container {
+        margin-top: 10px;
+      }
+
+      select {
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 10px;
+        border: none;
+        color: white;
+        background: #333;
+      }
+
+      button {
+        padding: 5px 10px;
+        font-size: 10px;
+        cursor: pointer;
+        margin-top: 12px;
+      }
+
+      #collageContainer {
+        display: grid;
+        gap: 15px;
+        margin-top: 30px;
+        width: 640px; 
+        margin-left: auto;
+        margin-right: auto;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
+      }
+
+      /* Collage image styling */
+      .collage-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 0; 
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); 
+        transition: transform 0.3s ease-in-out;
+        align-content: center;
+        margin-left: 225px; 
+      }
+
+      .collage-image:hover {
+        transform: scale(1.05); 
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5); 
+      }
+
+      #clearCollageBtn {
+        display: inline-block; 
+      }
+      #frameSelection {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.frame-option {
+  margin: 10px;
+  cursor: pointer;
+}
+
+.frame-option img {
+  border: 2px solid white;
+  border-radius: 5px;
+  transition: transform 0.3s ease-in-out;
+}
+
+.frame-option img:hover {
+  transform: scale(1.1);
+}
+    </style>
+  </head>
+  <body>
+
+    <div class="logo-container">
+      <img src="logo.png" alt="Squid Game Logo">
+    </div>
+
+    <div class="content-container">
+      <video id="webcam" width="345" height="190" autoplay></video>
+      <div id="capturedImageContainer">
+        <img id="capturedImage" width="300" height="200" />
+      </div>
+      <div class="buttons">
+        <button onclick="on_cam()">🎥 Turn it ON</button>
+        <button onclick="capture_image()">📸 Capture Image</button>
+        <button onclick="off_cam()">❌ Turn it OFF</button>
+        <button id="downloadBtn" onclick="download_image()">📥 Download Image</button> <!-- New download button -->
+      </div>
+
+      <h1 id='webcamoff'></h1>
+      <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+      <div class="buttons">
+        <button id="retakeBtn" onclick="retake_photo()">🔄 Take Photo Again</button>
+        <button id="clearBtn" onclick="clear_photo()">🗑️ Clear Photo</button>
+        <button id="clearCollageBtn" onclick="clearCollage()">🗑️ Clear Collage</button> <!-- New button -->
+      </div>
+      <div class="buttons">
+        <button id="frameButton" onclick="toggleFrames()">🔲 Select Frame</button>
+      </div>
+      
+      <div id="frameSelection" style="display: none;">
+        <div class="frame-option" onclick="applyFrame('frame1.png')">
+          <img src="fdframe.png" alt="Frame 1" width="100" height="100">
+        </div>
+        <div class="frame-option" onclick="applyFrame('frame2.png')">
+          <img src="photoframe.png" alt="Frame 2" width="100" height="100">
+        </div>
+      </div>
+      <div class="filter-container">
+        <select id="filterSelect">
+          <option value="none">🔄 No Filter</option>
+          <option value="grayscale(100%)">⚫ Grayscale</option>
+          <option value="sepia(100%)">🟤 Sepia</option>
+          <option value="invert(100%)">🔃 Invert</option>
+          <option value="blur(5px)">🌫️ Blur</option>
+          <option value="brightness(1.5)">☀️ Brightness Boost</option>
+          <option value="contrast(200%)">🔳 High Contrast</option>
+          <option value="hue-rotate(90deg)">🌈 Hue Rotate</option>
+          <option value="saturate(300%)">🎨 Saturation Boost</option>
+          <option value="opacity(50%)">👻 Ghost Effect</option>
+          <option value="drop-shadow(10px 10px 5px #ff0000)">🔥 Shadow Glow</option>
+        </select>
+        <button onclick="applySelectedFilter()">✔️ Apply Filter</button>
+      </div>
+
+      <div class="filter-container">
+        <select id="collageSelect">
+          <option value="2">🖼️ 2 Images</option>
+          <option value="3">🖼️ 3 Images</option>
+          <option value="4">🖼️ 4 Images</option>
+          <option value="6">🖼️ 6 Images</option>
+          <option value="9">🖼️ 9 Images</option>
+        </select>
+        <button onclick="updateCollageLayout()">✔️ Update Layout</button>
+      </div>
+
+      <div id="collageContainer"></div>
+    </div>
+    <div id="qrcode" style="margin-top: 20px;">
+      <script>
+        let stream = null;  
+        let currentFilter = 'none';
+        let capturedImages = []; 
+        let collageSize = 2; 
+    
+        function on_cam() {
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+              .then(function(camStream) {
+                stream = camStream;
+                let webcam = document.getElementById('webcam');
+                webcam.srcObject = stream;
+                document.getElementById('webcamoff').innerText = "";
+                document.getElementById('webcam').style.display = "block"; // Show webcam
+                document.getElementById('capturedImageContainer').style.display = "none"; // Hide captured image
+              })
+              .catch(function(error) {
+                console.error("Error accessing webcam: ", error);
+                document.getElementById('webcamoff').innerText = " ";
+              });
+          } else {
+            alert("Your browser does not support webcam access.");
+          }
+        }
+    
+        function off_cam() {
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            document.getElementById('webcam').srcObject = null;
+            document.getElementById('webcamoff').innerText = "Your cam is turned off!";
+            stream = null;
+          } else {
+            document.getElementById('webcamoff').innerText = "Camera is already off!";
+          }
+        }
+    
+        function capture_image() {
+          let canvas = document.getElementById('canvas');
+          let context = canvas.getContext('2d');
+          let webcam = document.getElementById('webcam');
+    
+          context.filter = currentFilter;
+          context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+          let dataUrl = canvas.toDataURL('image/png');
+    
+          let capturedImage = document.getElementById('capturedImage');
+          capturedImage.src = dataUrl;
+          capturedImage.style.display = "block"; 
+    
+          document.getElementById('retakeBtn').style.display = "inline-block";
+          document.getElementById('clearBtn').style.display = "inline-block";
+    
+          // Hide webcam and show captured image
+          document.getElementById('webcam').style.display = "none";
+          document.getElementById('capturedImageContainer').style.display = "flex";
+    
+          // Convert data URL to Blob
+          fetch(dataUrl)
+            .then(res => res.blob())
+            .then(blob => {
+              // Upload the captured image to Imgur
+              uploadToImgur(blob);
+            });
+    
+          capturedImages.push(dataUrl);
+          displayCollage();
+        }
+    
+        function retake_photo() {
+          let capturedImage = document.getElementById('capturedImage');
+          capturedImage.style.display = "none"; 
+    
+          document.getElementById('retakeBtn').style.display = "none";
+          document.getElementById('clearBtn').style.display = "none";
+          document.getElementById('webcam').style.display = "block"; // Show webcam
+          document.getElementById('capturedImageContainer').style.display = "none"; // Hide captured image
+        }
+    
+        function clear_photo() {
+          let capturedImage = document.getElementById('capturedImage');
+          capturedImage.src = "";
+          capturedImage.style.display = "none"; 
+    
+          document.getElementById('retakeBtn').style.display = "none";
+          document.getElementById('clearBtn').style.display = "none";
+          document.getElementById('webcam').style.display = "block"; // Show webcam
+          document.getElementById('capturedImageContainer').style.display = "none"; // Hide captured image
+        }
+    
+        function applyFilter(filter) {
+          currentFilter = filter;
+          document.getElementById('webcam').style.filter = filter;
+        }
+    
+        function applySelectedFilter() {
+          let selectedFilter = document.getElementById('filterSelect').value;
+          applyFilter(selectedFilter);
+        }
+    
+        function updateCollageLayout() {
+          collageSize = parseInt(document.getElementById('collageSelect').value);
+          displayCollage();
+        }
+    
+        function displayCollage() {
+          let collageContainer = document.getElementById('collageContainer');
+          collageContainer.innerHTML = ''; 
+    
+          capturedImages.slice(0, collageSize).forEach((imageSrc) => {
+            let img = document.createElement('img');
+            img.src = imageSrc;
+            img.classList.add('collage-image');
+            collageContainer.appendChild(img);
+          });
+        }
+    
+        function clearCollage() {
+          capturedImages = [];
+    
+          let collageContainer = document.getElementById('collageContainer');
+          collageContainer.innerHTML = ''; 
+    
+          let capturedImage = document.getElementById('capturedImage');
+          capturedImage.style.display = "none"; 
+    
+          document.getElementById('retakeBtn').style.display = "none";
+          document.getElementById('clearBtn').style.display = "none";
+        }
+    
+        function download_image() {
+          let capturedImage = document.getElementById('capturedImage');
+          if (capturedImage.src) {
+            let link = document.createElement('a');
+            link.href = capturedImage.src;
+            link.download = 'captured-image.png';
+            link.click();
+          }
+        }
+    
+        const CLIENT_ID = '449bd6deb3a0a97'; 
+        const CLIENT_SECRET = 'c58d8c60b7b0b5613d60d4bfd0d6029cc4939f47';
+    
+        function uploadToImgur(imageBlob) {
+          const formData = new FormData();
+          formData.append('image', imageBlob);
+    
+          fetch('https://api.imgur.com/3/image', {
+            method: 'POST',
+            headers: {
+              Authorization: `Client-ID ${CLIENT_ID}`
+            },
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              const imgurLink = data.data.link;
+              console.log('Image uploaded to Imgur:', imgurLink);
+              alert('Image uploaded to Imgur: ' + imgurLink);
+              
+              // Generate and display the QR code
+              let qrcodeContainer = document.getElementById('qrcode');
+              qrcodeContainer.innerHTML = ""; // Clear previous QR code
+              new QRCode(qrcodeContainer, imgurLink);
+    
+            } else {
+              console.error('Imgur upload failed:', data);
+              alert('Imgur upload failed!');
+            }
+          })
+          .catch(error => {
+            console.error('Error uploading to Imgur:', error);
+            alert('Error uploading to Imgur!');
+          });
+        }
+        
+        
+        let selectedFrame = null;
+
+// Toggle frame options visibility
+function toggleFrames() {
+  const frameSelection = document.getElementById('frameSelection');
+  frameSelection.style.display = (frameSelection.style.display === 'none' || frameSelection.style.display === '') ? 'flex' : 'none';
+}
+
+// Apply selected frame to content container
+function applyFrame(frameSrc) {
+  selectedFrame = frameSrc;
+
+  // Remove any existing frame
+  const existingFrame = document.getElementById('selectedFrame');
+  if (existingFrame) {
+    existingFrame.remove();
+  }
+
+  // Create a new image element for the selected frame
+  let frameImage = document.createElement('img');
+  frameImage.src = frameSrc;
+  frameImage.id = 'selectedFrame';
+  frameImage.style.position = 'absolute';
+  frameImage.style.top = '50%';
+  frameImage.style.left = '50%';
+  frameImage.style.transform = 'translate(-50%, -50%)';
+  frameImage.style.width = '640px'; // Adjust width to match content container
+  frameImage.style.height = '480px'; // Adjust height to match content container
+  frameImage.style.pointerEvents = 'none'; // Ensure the frame doesn't interfere with photo actions
+  frameImage.style.zIndex = '1'; // Ensure the frame is above other elements
+
+  // Add the frame to the content container
+  const contentContainer = document.querySelector('.content-container');
+  contentContainer.appendChild(frameImage);
+
+  // Ensure the captured image is above the frame
+  const capturedImage = document.getElementById('capturedImage');
+  capturedImage.style.position = 'absolute';
+  capturedImage.style.top = '50%';
+  capturedImage.style.left = '50%';
+  capturedImage.style.transform = 'translate(-50%, -50%)';
+  capturedImage.style.width = '640px'; // Adjust width to match content container
+  capturedImage.style.height = '480px'; // Adjust height to match content container
+  capturedImage.style.zIndex = '2'; // Ensure the captured image is above the frame
+
+  // Show the captured image
+  capturedImage.style.display = 'block';
+
+  // Hide frame options
+  document.getElementById('frameSelection').style.display = 'none';
+}
+      </script>
+  </body>
+  </html>
